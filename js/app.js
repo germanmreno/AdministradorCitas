@@ -9,7 +9,17 @@ const formulario = document.querySelector("#nueva-cita");
 
 const contenedorCitas = document.querySelector("#citas");
 
-class Citas {}
+class Citas {
+    constructor() {
+        this.citas = [];
+    }
+
+    agregarCita(cita) {
+        this.citas = [...this.citas, cita];
+
+        console.log(this.citas);
+    }
+}
 
 class UI {
     imprimirAlerta(mensaje, tipo) {
@@ -28,6 +38,60 @@ class UI {
             .insertBefore(divMensaje, document.querySelector(".agregar-cita"));
 
         setTimeout(() => divMensaje.remove(), 3000);
+    }
+
+    imprimirCitas({ citas }) {
+        this.refrescarHTML();
+
+        citas.forEach((cita) => {
+            const {
+                mascota,
+                propietario,
+                telefono,
+                fecha,
+                hora,
+                sintomas,
+                id,
+            } = cita;
+
+            const divCita = document.createElement("div");
+            divCita.classList.add("cita", "p-3");
+            divCita.dataset.id = id;
+
+            const mascotaParrafo = document.createElement("h2");
+            mascotaParrafo.classList.add("card-title", "font-weight-bolder");
+            mascotaParrafo.textContent = mascota;
+
+            const propietarioParrafo = document.createElement("p");
+            propietarioParrafo.innerHTML = `<span class="font-weight-bolder">Propietario: </span> ${propietario}`;
+
+            const telefonoParrafo = document.createElement("p");
+            telefonoParrafo.innerHTML = `<span class="font-weight-bolder">Teléfono: </span> ${telefono}`;
+
+            const fechaParrafo = document.createElement("p");
+            fechaParrafo.innerHTML = `<span class="font-weight-bolder">Fecha: </span> ${fecha}`;
+
+            const horaParrafo = document.createElement("p");
+            horaParrafo.innerHTML = `<span class="font-weight-bolder">Hora: </span> ${hora}`;
+
+            const sintomasParrafo = document.createElement("p");
+            sintomasParrafo.innerHTML = `<span class="font-weight-bolder">Síntomas: </span> ${sintomas}`;
+
+            divCita.appendChild(mascotaParrafo);
+            divCita.appendChild(propietarioParrafo);
+            divCita.appendChild(telefonoParrafo);
+            divCita.appendChild(fechaParrafo);
+            divCita.appendChild(horaParrafo);
+            divCita.appendChild(sintomasParrafo);
+
+            contenedorCitas.appendChild(divCita);
+        });
+    }
+
+    refrescarHTML() {
+        while (contenedorCitas.firstChild) {
+            contenedorCitas.removeChild(contenedorCitas.firstChild);
+        }
     }
 }
 
@@ -75,4 +139,21 @@ function nuevaCita(e) {
         userInterface.imprimirAlerta("Todos los campos son obligatorios", "error");
         return;
     }
+
+    citaObj.id = Date.now();
+
+    administradorCitas.agregarCita({ ...citaObj });
+
+    reiniciarObjeto();
+    formulario.reset();
+    userInterface.imprimirCitas(administradorCitas);
+}
+
+function reiniciarObjeto() {
+    citaObj.mascota = "";
+    citaObj.propietario = "";
+    citaObj.telefono = "";
+    citaObj.fecha = "";
+    citaObj.hora = "";
+    citaObj.sintomas = "";
 }

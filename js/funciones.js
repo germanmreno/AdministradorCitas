@@ -15,6 +15,7 @@ const userInterface = new UI();
 const administradorCitas = new Citas();
 
 let editando = false;
+export let DB;
 
 const citaObj = {
     mascota: "",
@@ -49,21 +50,41 @@ export function nuevaCita(e) {
     if (editando) {
         userInterface.imprimirAlerta("Editado correctamente");
 
-        formulario.querySelector('button[type="submit"]').textContent = "Crear cita";
+        const transaction = DB.transaction(["citas"], "readwrite");
+        const objectStore = transaction.objectStore("citas");
 
-        editando = false;
+        objectStore.put(citaObj);
 
-        administradorCitas.editarCita({ ...citaObj });
+        transaction.oncomplete = () => {
+            formulario.querySelector('button[type="submit"]').textContent =
+                "Crear cita";
+
+            editando = false;
+        };
+
+        transaction.onerror = () => {
+            console.log("Hubo un error");
+        };
     } else {
         citaObj.id = Date.now();
 
         administradorCitas.agregarCita({ ...citaObj });
-        userInterface.imprimirAlerta("Se agregó correctamente");
+
+        const transaction = DB.transaction(["citas"], "readwrite");
+
+        const objectStore = transaction.objectStore("citas");
+
+        objectStore.add(citaObj);
+
+        transaction.oncomplete = function () {
+            console.log("Cita agregada");
+            userInterface.imprimirAlerta("Se agregó correctamente");
+        };
     }
 
     reiniciarObjeto();
     formulario.reset();
-    userInterface.imprimirCitas(administradorCitas);
+    userInterface.imprimirCitas();
 }
 
 export function reiniciarObjeto() {
@@ -76,9 +97,20 @@ export function reiniciarObjeto() {
 }
 
 export function eliminarCita(id) {
-    administradorCitas.borrarCita(id);
-    userInterface.imprimirAlerta("La cita se eliminó correctamente");
-    userInterface.imprimirCitas(administradorCitas);
+    const transaction = DB.transaction(["citas"], "readwrite");
+
+    const objectStore = transaction.objectStore("citas");
+
+    objectStore.delete(id);
+
+    transaction.oncomplete = () => {
+        console.log(`Cita ${id} ha sido eliminada`);
+        userInterface.imprimirCitas();
+    };
+
+    transaction.onerror = () => {
+        console.log("Hubo un error");
+    };
 }
 
 export function cargarEdicion(cita) {
@@ -103,4 +135,39 @@ export function cargarEdicion(cita) {
         "Guardar cambios";
 
     editando = true;
+}
+
+export function crearDB() {
+    const crearDB = window.indexedDB.open("citas", 1);
+
+    crearDB.onerror = function () {
+        console.log("Hubo un error");
+    };
+
+    crearDB.onsuccess = function () {
+        console.log("Base de datos creada");
+
+        DB = crearDB.result;
+
+        userInterface.imprimirCitas();
+    };
+
+    crearDB.onupgradeneeded = function (e) {
+        const db = e.target.result;
+
+        const objectStore = db.createObjectStore("citas", {
+            keyPath: "id",
+            autoIncrement: true,
+        });
+
+        objectStore.createIndex("mascota", "mascota", { unique: false });
+        objectStore.createIndex("propietario", "propietario", { unique: false });
+        objectStore.createIndex("telefono", "telefono", { unique: false });
+        objectStore.createIndex("fecha", "fecha", { unique: false });
+        objectStore.createIndex("hora", "hora", { unique: false });
+        objectStore.createIndex("sintomas", "sintomas", { unique: false });
+        objectStore.createIndex("id", "id", { unique: true });
+
+        console.log("Base creada y lista");
+    };
 }
